@@ -1,65 +1,90 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <main className="mx-auto w-full max-w-7xl px-6 py-12 md:py-14">
+      <section className="relative overflow-hidden rounded-3xl border border-cyan-100 bg-white p-8 shadow-[0_22px_70px_-30px_rgba(14,116,144,0.4)] md:p-12">
+        <div className="pointer-events-none absolute right-[-70px] top-[-70px] h-56 w-56 rounded-full bg-cyan-200/45 blur-3xl" />
+        <div className="pointer-events-none absolute bottom-[-80px] left-[-40px] h-56 w-56 rounded-full bg-sky-100/60 blur-3xl" />
+        <div className="relative grid items-center gap-8 md:grid-cols-2">
+        <div className="space-y-6">
+          <p className="inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-700">
+            AI Career Intelligence
           </p>
+          <h1 className="max-w-2xl text-4xl font-bold tracking-tight text-slate-900 md:text-5xl">
+            Build your career with clear, data-backed guidance.
+          </h1>
+          <p className="max-w-xl text-base leading-relaxed text-slate-600 md:text-lg">
+            CareerMind helps you track applications, improve your resume, and get practical next steps to
+            land better roles faster.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Button asChild size="lg">
+              <Link href="/auth/signup">Start Free</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link href="/auth/signin">Login</Link>
+            </Button>
+          </div>
+          <div className="grid max-w-xl grid-cols-3 gap-3 pt-2">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+              <p className="text-lg font-bold text-slate-900">10x</p>
+              <p className="text-xs text-slate-600">Faster feedback loop</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+              <p className="text-lg font-bold text-slate-900">1 Hub</p>
+              <p className="text-xs text-slate-600">For all job tracking</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+              <p className="text-lg font-bold text-slate-900">Weekly</p>
+              <p className="text-xs text-slate-600">Actionable insights</p>
+            </div>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-cyan-100 via-white to-slate-100 p-6">
+          <p className="text-sm font-semibold text-slate-900">What you can do with CareerMind</p>
+          <ul className="mt-4 space-y-3 text-sm text-slate-700">
+            <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-cyan-600" />Upload your resume and extract skills instantly</li>
+            <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-cyan-600" />Match your profile against job descriptions</li>
+            <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-cyan-600" />See missing skills and a focused improvement plan</li>
+            <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-cyan-600" />Track applications and interview outcomes in one place</li>
+            <li className="flex items-start gap-2"><span className="mt-1 h-1.5 w-1.5 rounded-full bg-cyan-600" />Get weekly progress summaries and next actions</li>
+          </ul>
+          <div className="mt-5 rounded-xl border border-cyan-200 bg-white/80 p-3 text-sm text-cyan-900">
+            Designed for students and professionals actively applying for roles.
+          </div>
         </div>
-      </main>
-    </div>
+        </div>
+      </section>
+
+      <section className="mt-10 grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader>
+            <CardTitle>Application Tracker</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-slate-600">
+            Keep all applications, interview stages, and outcomes organized in one dashboard.
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Resume and Skill Insights</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-slate-600">
+            Discover your strongest skills, current gaps, and what to improve for your target role.
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Weekly Action Plan</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-slate-600">
+            Get simple weekly recommendations based on your recent activity and results.
+          </CardContent>
+        </Card>
+      </section>
+    </main>
   );
 }

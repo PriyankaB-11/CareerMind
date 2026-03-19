@@ -1,36 +1,216 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CareerMind
 
-## Getting Started
+CareerMind is a production-ready SaaS web application for persistent AI-powered career intelligence.
 
-First, run the development server:
+It tracks user activity over time, learns from outcomes, and generates personalized, evolving insights.
+
+## Stack
+
+- Next.js 14 (App Router)
+- TypeScript
+- Tailwind CSS
+- ShadCN-style UI primitives
+- Recharts
+- Prisma ORM
+- PostgreSQL
+- NextAuth (credentials auth)
+
+## Core Capabilities
+
+- Full authentication and protected product routes
+- User-isolated data access in every API route
+- Resume PDF upload and parsing (`pdf-parse`)
+- Job description match scoring + top skill gaps + recommendation
+- Rejection autopsy with repeated failure pattern detection
+- Career DNA radar chart generated from persisted user data
+- Weekly hindsight report generator
+- Self-improving advice system (outcome-based priority adjustment)
+
+## Memory Model (Persisted in DB)
+
+CareerMind implements 3 memory layers using relational data and derived insights:
+
+1. Episodic Memory
+	- `Application`, `Rejection`, `Resume`, `CareerEvent`
+2. Semantic Memory
+	- Derived profile (`Skill`, `Project`, strengths, weaknesses)
+	- Stored in `Insight` (`type=SEMANTIC`)
+3. Reflective Memory
+	- Repeated failures, strategy outcomes, advice effectiveness
+	- Stored in `Insight` (`type=REFLECTIVE`, `type=AUTOPSY`, `type=WEEKLY`)
+
+## Routes
+
+Pages:
+
+- `/`
+- `/auth/signin`
+- `/auth/signup`
+- `/dashboard`
+- `/upload`
+- `/job-match`
+- `/history`
+- `/reports`
+
+API routes:
+
+- `POST /api/auth/signup`
+- `POST|GET /api/auth/[...nextauth]`
+- `POST /api/resume/upload`
+- `POST /api/job/match`
+- `POST /api/rejection/log`
+- `GET /api/dashboard`
+- `GET /api/history`
+- `GET /api/report`
+
+## Prisma Models
+
+- `User`
+- `Resume`
+- `Skill`
+- `Project`
+- `Application`
+- `Rejection`
+- `AdviceLog`
+- `Insight`
+- `CareerEvent`
+- `Account`, `Session`, `VerificationToken` (NextAuth)
+
+All key models include relations, timestamps, and indexes.
+
+## Environment Variables
+
+Create `.env` from `.env.example`.
+
+Required:
+
+- `DATABASE_URL`
+- `DIRECT_URL`
+- `NEXTAUTH_URL`
+- `NEXTAUTH_SECRET`
+
+Example:
+
+```bash
+DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-1-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require"
+DIRECT_URL="postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres?sslmode=require"
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="replace-with-a-long-random-secret"
+```
+
+## Quick Start (Clone + Run)
+
+### 1. Clone the repository
+
+```bash
+git clone <your-repo-url>
+cd CareerMind
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Create environment file
+
+Windows PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+macOS/Linux:
+
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` and set real values for:
+
+- `DATABASE_URL` (runtime DB connection)
+- `DIRECT_URL` (direct DB connection for Prisma migrations)
+- `NEXTAUTH_SECRET`
+
+### 4. Generate Prisma client
+
+```bash
+npm run prisma:generate
+```
+
+### 5. Run database migrations
+
+```bash
+npm run prisma:migrate
+```
+
+### 6. Start the app
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open the app at `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 7. First login flow
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Open `/auth/signup`
+2. Create an account
+3. Login and access `/dashboard`
 
-## Learn More
+## Useful Commands
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run dev
+npm run lint
+npx tsc --noEmit
+npm run prisma:generate
+npm run prisma:migrate
+npm run prisma:studio
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Troubleshooting
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Build/dev cache issues (stale chunks or manifest errors)
 
-## Deploy on Vercel
+If you see chunk load errors or missing manifest errors, clear caches and restart:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```powershell
+Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
+if (Test-Path .next) { Remove-Item -Recurse -Force .next }
+if (Test-Path node_modules/.cache) { Remove-Item -Recurse -Force node_modules/.cache }
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Database connection errors
+
+- Verify `DATABASE_URL` and `DIRECT_URL` are correct and use your real password.
+- If using Supabase pooler for runtime, include:
+	- `pgbouncer=true`
+	- `connection_limit=1`
+	- `sslmode=require`
+- Re-run:
+
+```bash
+npm run prisma:generate
+npm run prisma:migrate
+```
+
+### Resume upload fails
+
+- Use a valid, unlocked PDF file (password-protected PDFs are rejected).
+
+## Validation
+
+```bash
+npm run lint
+npx tsc --noEmit
+```
+
+## Deployment Notes
+
+- Works with Supabase PostgreSQL or any hosted PostgreSQL.
+- Set env vars in deployment environment.
+- Run Prisma migrations during deploy pipeline.
+- App routes and APIs are authorization-protected and user-scoped.
