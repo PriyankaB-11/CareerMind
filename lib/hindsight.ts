@@ -134,17 +134,21 @@ export async function logEvent(userId: string, type: EpisodicEventType, data: Re
     metadata: data,
   };
 
-  await withRetry(() =>
-    client.retain(bankId, JSON.stringify(event), {
-      timestamp: event.timestamp,
-      tags: ["episodic", "event", `event:${type}`],
-      metadata: {
-        userId,
-        type,
+  try {
+    await withRetry(() =>
+      client.retain(bankId, JSON.stringify(event), {
         timestamp: event.timestamp,
-      },
-    }),
-  );
+        tags: ["episodic", "event", `event:${type}`],
+        metadata: {
+          userId,
+          type,
+          timestamp: event.timestamp,
+        },
+      }),
+    );
+  } catch {
+    return;
+  }
 }
 
 export async function getUserTimeline(userId: string): Promise<TimelineEvent[]> {
