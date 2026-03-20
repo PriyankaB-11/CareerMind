@@ -34,39 +34,45 @@ export async function GET() {
       };
     }
 
-    await prisma.insight.create({
-      data: {
-        userId: session.user.id,
-        type: InsightType.WEEKLY,
-        title: "Weekly Hindsight",
-        content: {
-          period: "Last 7 days",
-          improved: report.improvements,
-          detectedPatterns: report.insights,
-          bestNextAction: report.nextBestAction,
-          summary: report.summary,
+    void Promise.allSettled([
+      prisma.insight.create({
+        data: {
+          userId: session.user.id,
+          type: InsightType.WEEKLY,
+          title: "Weekly Hindsight",
+          content: {
+            period: "Last 7 days",
+            improved: report.improvements,
+            detectedPatterns: report.insights,
+            bestNextAction: report.nextBestAction,
+            summary: report.summary,
+          },
         },
-      },
-    });
-
-    await storeInsight(session.user.id, {
-      type: "weekly_report",
-      content: {
-        patterns: report.insights,
-        strategicInsights: [report.summary, report.nextBestAction],
-        adviceSuccesses: [],
-        adviceFailures: [],
-      },
-    });
-
-    await logEvent(session.user.id, "advice_given", {
-      source: "weekly_report",
-      nextBestAction: report.nextBestAction,
-    });
+      }),
+      storeInsight(session.user.id, {
+        type: "weekly_report",
+        content: {
+          patterns: report.insights,
+          strategicInsights: [report.summary, report.nextBestAction],
+          adviceSuccesses: [],
+          adviceFailures: [],
+        },
+      }),
+      logEvent(session.user.id, "advice_given", {
+        source: "weekly_report",
+        nextBestAction: report.nextBestAction,
+      }),
+    ]);
 
     return NextResponse.json(report);
   } catch (error) {
     console.error("report generation failed", error);
-    return NextResponse.json({ error: "Failed to generate report" }, { status: 500 });
+    return NextResponse.json({
+      summary: "Weekly report is temporarily running in safe mode due to service unavailability.",
+      improvements: ["No stable activity snapshot available right now."],
+      insights: ["External AI/memory service is currently unavailable."],
+      nextBestAction: "Retry in a few minutes, or continue logging activity to improve the next report.",
+      warning: "safe_fallback",
+    });
   }
 }
