@@ -9,9 +9,10 @@ interface MatchResponse {
   score: number;
   matchedSkills: string[];
   missingSkills: string[];
-  recommendation: "Apply" | "Improve";
+  recommendation: "APPLY" | "IMPROVE";
   adviceId: string;
   strategy: string;
+  guidance?: string;
 }
 
 export default function JobMatchPage() {
@@ -72,13 +73,21 @@ export default function JobMatchPage() {
       </Card>
 
       {result ? (
-        <section className="grid gap-4 md:grid-cols-3">
-          <Card>
-            <CardContent className="p-5">
-            <p className="text-xs uppercase tracking-wide text-slate-500">Match Score</p>
-            <p className="mt-2 text-4xl font-bold text-slate-900">{result.score}</p>
-            </CardContent>
-          </Card>
+        <section className="space-y-4">
+          {result.guidance && (
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="p-5">
+                <p className="text-sm text-blue-900">{result.guidance}</p>
+              </CardContent>
+            </Card>
+          )}
+          <div className="grid gap-4 md:grid-cols-3">
+            <Card>
+              <CardContent className="p-5">
+              <p className="text-xs uppercase tracking-wide text-slate-500">Match Score</p>
+              <p className="mt-2 text-4xl font-bold text-slate-900">{result.score}</p>
+              </CardContent>
+            </Card>
 
           <Card>
             <CardContent className="p-5">
@@ -100,6 +109,7 @@ export default function JobMatchPage() {
             <p className="mt-2 text-xs text-slate-500">Strategy: {result.strategy}</p>
             </CardContent>
           </Card>
+          </div>
         </section>
       ) : null}
     </main>

@@ -41,15 +41,9 @@ export async function GET() {
     return NextResponse.json(dashboard);
   } catch (error) {
     console.error("dashboard fetch failed", error);
-
-    const message = error instanceof Error ? error.message : "";
-    if (message.includes("P1001") || message.includes("Can't reach database server")) {
-      return NextResponse.json({
-        ...EMPTY_DASHBOARD,
-        warning: "Database is currently unreachable. Showing an empty dashboard for now.",
-      });
-    }
-
-    return NextResponse.json({ error: "Failed to load dashboard" }, { status: 500 });
+    return NextResponse.json({
+      ...EMPTY_DASHBOARD,
+      warning: "Live intelligence is temporarily unavailable. Showing a safe fallback view.",
+    });
   }
 }

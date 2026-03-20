@@ -164,8 +164,16 @@ export async function matchJobForUser(userId: string, jdText: string) {
     (token) => !skillSet.has(token) && KNOWN_SKILLS.some((skill) => skill.includes(token) || token.includes(skill)),
   );
 
-  const score = tokens.length === 0 ? 0 : Math.round((matchedSkills.length / tokens.length) * 100);
-  const recommendation = score >= 65 ? "Apply" : "Improve";
+  let score: number;
+  let recommendation: string;
+
+  if (userSkills.length === 0) {
+    score = 50;
+    recommendation = "Improve";
+  } else {
+    score = tokens.length === 0 ? 0 : Math.round((matchedSkills.length / tokens.length) * 100);
+    recommendation = score >= 65 ? "Apply" : "Improve";
+  }
   const strategy = recommendation === "Apply" ? "apply_with_current_strengths" : "close_skill_gaps_before_applying";
 
   const advice = await prisma.adviceLog.create({
@@ -309,58 +317,61 @@ export async function uploadResumeForUser(input: {
   skills: string[];
   projects: string[];
 }) {
-  await prisma.$transaction(async (tx) => {
-    await tx.resume.create({
-      data: {
-        userId: input.userId,
-        filename: input.filename,
-        text: input.text,
-      },
-    });
-
-    for (const skill of uniq(input.skills)) {
-      await tx.skill.upsert({
-        where: {
-          userId_name: {
-            userId: input.userId,
-            name: skill,
-          },
-        },
-        update: {
-          source: "resume",
-        },
-        create: {
-          userId: input.userId,
-          name: skill,
-          source: "resume",
-        },
-      });
-    }
-
-    for (const projectTitle of uniq(input.projects)) {
-      await tx.project.create({
-        data: {
-          userId: input.userId,
-          title: projectTitle,
-          source: "resume",
-        },
-      });
-    }
-
-    await tx.careerEvent.create({
-      data: {
-        userId: input.userId,
-        type: EventType.RESUME_UPLOAD,
-        title: `Uploaded resume ${input.filename}`,
-        metadata: {
-          extractedSkills: input.skills,
-          extractedProjects: input.projects,
-        },
-      },
-    });
+  await prisma.resume.create({
+    data: {
+      userId: input.userId,
+      filename: input.filename,
+      text: input.text,
+    },
   });
 
-  await Promise.all([rebuildSemanticMemory(input.userId), rebuildReflectiveMemory(input.userId)]);
+  for (const skill of uniq(input.skills)) {
+    await prisma.skill.upsert({
+      where: {
+        userId_name: {
+          userId: input.userId,
+          name: skill,
+        },
+      },
+      update: {
+        source: "resume",
+      },
+      create: {
+        userId: input.userId,
+        name: skill,
+        source: "resume",
+      },
+    });
+  }
+
+  const uniqueProjects = uniq(input.projects)
+    .map((projectTitle) => projectTitle.trim())
+    .filter((projectTitle) => projectTitle.length > 1)
+    .slice(0, 30);
+
+  if (uniqueProjects.length > 0) {
+    await prisma.project.createMany({
+      data: uniqueProjects.map((title) => ({
+        userId: input.userId,
+        title,
+        source: "resume",
+      })),
+    });
+  }
+
+  await prisma.careerEvent.create({
+    data: {
+      userId: input.userId,
+      type: EventType.RESUME_UPLOAD,
+      title: `Uploaded resume ${input.filename}`,
+      metadata: {
+        extractedSkills: input.skills,
+        extractedProjects: input.projects,
+      },
+    },
+  });
+
+  void Promise.allSettled([rebuildSemanticMemory(input.userId), rebuildReflectiveMemory(input.userId)]);
 }
 
 export async function fetchDashboard(userId: string) {

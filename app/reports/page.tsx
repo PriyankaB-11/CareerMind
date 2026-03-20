@@ -5,10 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface WeeklyReport {
-  period: string;
-  improved: string[];
-  detectedPatterns: string[];
-  bestNextAction: string;
+  summary: string;
+  improvements: string[];
+  insights: string[];
+  nextBestAction: string;
 }
 
 export default function ReportsPage() {
@@ -56,12 +56,13 @@ export default function ReportsPage() {
 
           {report ? (
             <div className="space-y-4 text-sm">
-              <p className="font-semibold text-slate-900">{report.period}</p>
+              <p className="font-semibold text-slate-900">Weekly Hindsight</p>
+              <p className="text-slate-700">{report.summary}</p>
 
               <div>
                 <p className="font-semibold text-slate-900">Progress</p>
                 <ul className="mt-1 space-y-1 text-slate-700">
-                  {report.improved.map((item) => (
+                  {report.improvements.map((item) => (
                     <li key={item}>• {item}</li>
                   ))}
                 </ul>
@@ -70,7 +71,7 @@ export default function ReportsPage() {
               <div>
                 <p className="font-semibold text-slate-900">Patterns</p>
                 <ul className="mt-1 space-y-1 text-slate-700">
-                  {report.detectedPatterns.map((item) => (
+                  {report.insights.map((item) => (
                     <li key={item}>• {item}</li>
                   ))}
                 </ul>
@@ -78,7 +79,7 @@ export default function ReportsPage() {
 
               <div className="rounded-lg bg-cyan-50 p-4 text-cyan-900">
                 <p className="font-semibold">Best Next Action</p>
-                <p className="mt-1">{report.bestNextAction}</p>
+                <p className="mt-1">{report.nextBestAction}</p>
               </div>
             </div>
           ) : !loading ? (

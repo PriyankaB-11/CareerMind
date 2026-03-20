@@ -10,6 +10,8 @@
   --border: 210 26% 86%;
   --input: 210 26% 86%;
   --ring: 190 93% 36%;
+  --brand-cyan: 191 95% 43%;
+  --brand-sky: 204 94% 50%;
 }
 
 body {
@@ -23,6 +25,32 @@ main {
   animation: page-enter 320ms ease-out;
 }
 
+a,
+button,
+input,
+textarea,
+select {
+  transition: all 180ms ease;
+}
+
+.fx-fade-up {
+  animation: page-enter 420ms ease-out both;
+}
+
+.fx-float {
+  animation: float-soft 5.5s ease-in-out infinite;
+}
+
+.fx-glow {
+  box-shadow: 0 0 0 1px hsla(var(--brand-cyan), 0.12), 0 14px 34px -20px hsla(var(--brand-sky), 0.45);
+}
+
+.surface-panel {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 251, 255, 0.98) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  backdrop-filter: blur(8px);
+}
+
 @keyframes page-enter {
   from {
     opacity: 0;
@@ -31,6 +59,18 @@ main {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes float-soft {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0px);
   }
 }
 

@@ -9,7 +9,9 @@ import { formatDate } from "@/utils/format";
 
 interface AutopsyResponse {
   reason: string;
-  topPatterns: Array<{ key: string; count: number }>;
+  patterns: string[];
+  criticalGap: string;
+  actionPlan: string[];
 }
 
 interface HistoryResponse {
@@ -34,9 +36,14 @@ export default function HistoryPage() {
 
   const loadDashboard = async () => {
     const historyRes = await fetch("/api/history");
-    const historyPayload = (await historyRes.json()) as HistoryResponse & { error?: string };
+    const raw = await historyRes.text();
+    const historyPayload = raw ? (JSON.parse(raw) as HistoryResponse & { error?: string }) : null;
     if (!historyRes.ok) {
-      throw new Error(historyPayload.error ?? "Failed to load timeline");
+      throw new Error(historyPayload?.error ?? "Failed to load timeline");
+    }
+
+    if (!historyPayload) {
+      throw new Error("History response was empty");
     }
 
     setHistory(historyPayload);
@@ -53,22 +60,42 @@ export default function HistoryPage() {
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
+    setError(null);
 
-    const response = await fetch("/api/rejection/log", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        missingSkills: form.missingSkills
-          .split(",")
-          .map((item) => item.trim())
-          .filter(Boolean),
-      }),
-    });
+    try {
+      const response = await fetch("/api/rejection/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          missingSkills: form.missingSkills
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
+        }),
+      });
 
-    const payload = (await response.json()) as AutopsyResponse;
-    setAutopsy(payload);
-    await loadDashboard();
+      const raw = await response.text();
+      const payload = raw ? (JSON.parse(raw) as AutopsyResponse & { error?: string }) : null;
+      if (!response.ok) {
+        throw new Error(payload?.error ?? "Failed to log rejection");
+      }
+
+      if (!payload) {
+        throw new Error("Autopsy response was empty");
+      }
+
+      setAutopsy(payload);
+      try {
+        await loadDashboard();
+      } catch (refreshErr) {
+        setError(refreshErr instanceof Error ? refreshErr.message : "Failed to refresh timeline");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to log rejection");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -135,10 +162,18 @@ export default function HistoryPage() {
           <div className="mt-5 rounded-xl bg-amber-50 p-4 text-sm text-amber-900">
             <p className="font-semibold">Exact reason</p>
             <p className="mt-1">{autopsy.reason}</p>
+            <p className="mt-3 font-semibold">Critical gap</p>
+            <p className="mt-1">{autopsy.criticalGap}</p>
             <p className="mt-3 font-semibold">Patterns</p>
             <ul className="mt-1 space-y-1">
-              {autopsy.topPatterns.map((item) => (
-                <li key={item.key}>• {item.key}: {item.count} times</li>
+              {autopsy.patterns.map((item) => (
+                <li key={item}>• {item}</li>
+              ))}
+            </ul>
+            <p className="mt-3 font-semibold">Action plan</p>
+            <ul className="mt-1 space-y-1">
+              {autopsy.actionPlan.map((item) => (
+                <li key={item}>• {item}</li>
               ))}
             </ul>
           </div>

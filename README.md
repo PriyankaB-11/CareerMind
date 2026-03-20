@@ -14,6 +14,8 @@ It tracks user activity over time, learns from outcomes, and generates personali
 - Prisma ORM
 - PostgreSQL
 - NextAuth (credentials auth)
+- Groq API (`qwen/qwen3-32b`)
+- Hindsight Cloud via `@vectorize-io/hindsight-client`
 
 ## Core Capabilities
 
@@ -88,6 +90,8 @@ Required:
 - `DIRECT_URL`
 - `NEXTAUTH_URL`
 - `NEXTAUTH_SECRET`
+- `GROQ_API_KEY`
+- `HINDSIGHT_API_KEY`
 
 Example:
 
@@ -96,7 +100,11 @@ DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-1-<region>.pool
 DIRECT_URL="postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres?sslmode=require"
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="replace-with-a-long-random-secret"
+GROQ_API_KEY="your-groq-api-key"
+HINDSIGHT_API_KEY="your-hindsight-api-key"
 ```
+
+Note: the published Hindsight npm package is `@vectorize-io/hindsight-client`.
 
 ## Quick Start (Clone + Run)
 
@@ -168,6 +176,59 @@ npx tsc --noEmit
 npm run prisma:generate
 npm run prisma:migrate
 npm run prisma:studio
+```
+
+## AI + Memory Architecture
+
+CareerMind now uses real LLM reasoning + real persistent memory:
+
+- `lib/hindsight.ts`
+	- `logEvent(userId, type, data)`
+	- `getUserTimeline(userId)`
+	- `getSemanticProfile(userId)`
+	- `updateSemanticProfile(userId, profile)`
+	- `getReflectiveInsights(userId)`
+	- `storeInsight(userId, insight)`
+- `lib/ai.ts`
+	- `analyzeJobMatch(userId, jobDescription)`
+	- `analyzeRejectionAutopsy(userId, rejectionData)`
+	- `buildWeeklyReportAI(userId)`
+	- `extractResumeWithAI(userId, resumeText)`
+	- `recordAdviceOutcome(userId, payload)`
+
+All AI calls include memory context and enforce JSON-only output.
+
+## Example API Calls
+
+Run these after logging in (or from browser UI):
+
+### Job Match
+
+```bash
+curl -X POST http://localhost:3000/api/job/match \
+	-H "Content-Type: application/json" \
+	-d '{"jdText":"Looking for a React + Node.js engineer with system design and AWS experience"}'
+```
+
+### Rejection Log + AI Autopsy
+
+```bash
+curl -X POST http://localhost:3000/api/rejection/log \
+	-H "Content-Type: application/json" \
+	-d '{
+		"company":"Acme",
+		"role":"Software Engineer",
+		"companyType":"STARTUP",
+		"stage":"TECHNICAL",
+		"reasonText":"Need stronger system design depth",
+		"missingSkills":["system design","aws"]
+	}'
+```
+
+### Weekly Report
+
+```bash
+curl http://localhost:3000/api/report
 ```
 
 ## Troubleshooting
