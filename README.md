@@ -22,6 +22,7 @@ It tracks user activity over time, learns from outcomes, and generates personali
 - Full authentication and protected product routes
 - User-isolated data access in every API route
 - Resume PDF upload and parsing (`pdf-parse`)
+- Resume extraction with layered fallback (parser -> buffer text heuristic -> deterministic extractor)
 - Job description match scoring + top skill gaps + recommendation
 - Rejection autopsy with repeated failure pattern detection
 - Career DNA radar chart generated from persisted user data
@@ -233,6 +234,12 @@ curl http://localhost:3000/api/report
 
 ## Troubleshooting
 
+### Slow development server / rebuilds on Windows
+
+- If your repo is inside OneDrive, file-locking can make Next.js rebuilds slower.
+- Prefer a local non-synced folder for best dev performance (for example `C:\dev\CareerMind`).
+- Keep only one `npm run dev` instance running at a time.
+
 ### Build/dev cache issues (stale chunks or manifest errors)
 
 If you see chunk load errors or missing manifest errors, clear caches and restart:
@@ -261,6 +268,16 @@ npm run prisma:migrate
 ### Resume upload fails
 
 - Use a valid, unlocked PDF file (password-protected PDFs are rejected).
+- If the PDF is image-only/scanned, extracted text may be limited and results can be sparse.
+- The API now falls back to a text-heuristic path when parser/AI are slow or unavailable.
+
+### Prisma transaction issues in dev
+
+- Resume persistence now avoids long interactive transactions for stability in local dev.
+- If you still see intermittent DB errors, verify pooler URL params in `DATABASE_URL`:
+	- `pgbouncer=true`
+	- `connection_limit=1`
+	- `sslmode=require`
 
 ## Validation
 
@@ -275,3 +292,4 @@ npx tsc --noEmit
 - Set env vars in deployment environment.
 - Run Prisma migrations during deploy pipeline.
 - App routes and APIs are authorization-protected and user-scoped.
+- Keep `experimental.serverComponentsExternalPackages` in `next.config.mjs` for stable server-side PDF parsing.
