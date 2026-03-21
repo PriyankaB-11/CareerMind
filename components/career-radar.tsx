@@ -6,7 +6,6 @@ import {
   PolarGrid,
   Radar,
   RadarChart,
-  ResponsiveContainer,
   Tooltip,
 } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +17,7 @@ interface RadarPoint {
 
 export function CareerRadar({ data }: { data: RadarPoint[] }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [ready, setReady] = useState(false);
+  const [size, setSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
     const node = containerRef.current;
@@ -26,14 +25,17 @@ export function CareerRadar({ data }: { data: RadarPoint[] }) {
       return;
     }
 
-    const updateReady = () => {
+    const updateSize = () => {
       const rect = node.getBoundingClientRect();
-      setReady(rect.width > 0 && rect.height > 0);
+      setSize({
+        width: Math.max(0, Math.floor(rect.width)),
+        height: Math.max(0, Math.floor(rect.height)),
+      });
     };
 
-    updateReady();
+    updateSize();
 
-    const observer = new ResizeObserver(() => updateReady());
+    const observer = new ResizeObserver(() => updateSize());
     observer.observe(node);
 
     return () => {
@@ -49,15 +51,18 @@ export function CareerRadar({ data }: { data: RadarPoint[] }) {
       </CardHeader>
       <CardContent className="min-w-0">
         <div ref={containerRef} className="h-[320px] min-w-0 w-full">
-          {ready ? (
-            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={280}>
-              <RadarChart data={data} outerRadius="70%">
-                <PolarGrid stroke="#cbd5e1" />
-                <PolarAngleAxis dataKey="dimension" tick={{ fill: "#334155", fontSize: 12 }} />
-                <Tooltip formatter={(value) => [`${value}`, "Score"]} />
-                <Radar dataKey="score" stroke="#0891b2" fill="#22d3ee" fillOpacity={0.45} />
-              </RadarChart>
-            </ResponsiveContainer>
+          {size.width > 0 && size.height > 0 ? (
+            <RadarChart
+              width={Math.max(280, size.width)}
+              height={Math.max(280, size.height)}
+              data={data}
+              outerRadius="70%"
+            >
+              <PolarGrid stroke="#cbd5e1" />
+              <PolarAngleAxis dataKey="dimension" tick={{ fill: "#334155", fontSize: 12 }} />
+              <Tooltip formatter={(value) => [`${value}`, "Score"]} />
+              <Radar dataKey="score" stroke="#0891b2" fill="#22d3ee" fillOpacity={0.45} />
+            </RadarChart>
           ) : null}
         </div>
       </CardContent>

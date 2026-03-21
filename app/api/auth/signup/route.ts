@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     const existing = await prisma.user.findUnique({ where: { email } });
 
     if (existing) {
-      return NextResponse.json({ error: "Email already in use" }, { status: 409 });
+      return NextResponse.json({ success: false, error: "Email already in use" });
     }
 
     const passwordHash = await hash(parsed.data.password, 10);

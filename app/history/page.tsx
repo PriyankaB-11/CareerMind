@@ -18,6 +18,7 @@ interface HistoryResponse {
   applications: Array<{ id: string; company: string; role: string; status: string; createdAt: string }>;
   rejections: Array<{ id: string; company: string; role: string; missingSkills: string[]; createdAt: string }>;
   events: Array<{ id: string; title: string; type: string; createdAt: string }>;
+  warning?: string;
 }
 
 export default function HistoryPage() {
@@ -121,6 +122,7 @@ export default function HistoryPage() {
           />
           <div className="grid gap-3 sm:grid-cols-2">
             <select
+              aria-label="Company type"
               value={form.companyType}
               onChange={(e) => setForm((prev) => ({ ...prev, companyType: e.target.value }))}
               className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
@@ -131,6 +133,7 @@ export default function HistoryPage() {
               <option value="UNKNOWN">Unknown</option>
             </select>
             <select
+              aria-label="Interview stage"
               value={form.stage}
               onChange={(e) => setForm((prev) => ({ ...prev, stage: e.target.value }))}
               className="h-10 rounded-md border border-slate-300 bg-white px-3 text-sm"
@@ -187,6 +190,11 @@ export default function HistoryPage() {
           <CardDescription>Applications, rejections, and events from your account only.</CardDescription>
         </CardHeader>
         <CardContent>
+        {history?.warning ? (
+          <div className="mb-3 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+            {history.warning}
+          </div>
+        ) : null}
         {loading ? (
           <p className="text-sm text-slate-500">Loading history...</p>
         ) : error ? (
