@@ -1,132 +1,182 @@
 # CareerMind
 
-CareerMind is a production-ready SaaS web application for persistent AI-powered career intelligence.
+CareerMind is a production-ready AI career platform built with Next.js App Router, Prisma, PostgreSQL (Supabase), NextAuth, and Groq.
 
-It tracks user activity over time, learns from outcomes, and generates personalized, evolving insights.
+It helps users improve interview outcomes through resume intelligence, job matching, rejection analysis, weekly strategy reports, and interview preparation workflows.
 
-## Quick Start
+## What This Project Does
 
-For setup instructions, see [SETUP.md](./SETUP.md)
+- Secure user authentication with credential-based login.
+- Resume upload and extraction from PDF.
+- Skill and project inference from resume content.
+- Job description match scoring with targeted gap analysis.
+- Rejection autopsy with pattern detection.
+- Weekly hindsight report from user activity and outcomes.
+- Target company tracker and interview prep question generation.
+- Mock interview answer feedback using AI.
 
-## Stack
+## Tech Stack
 
 - Next.js 14 (App Router)
 - TypeScript
 - Tailwind CSS
-- ShadCN-style UI primitives
-- Recharts
 - Prisma ORM
-- PostgreSQL
-- NextAuth (credentials auth)
-- Groq API (`qwen/qwen3-32b`)
-- Hindsight Cloud via `@vectorize-io/hindsight-client`
+- PostgreSQL (Supabase)
+- NextAuth
+- Groq (`qwen/qwen3-32b`)
+- Hindsight memory client (`@vectorize-io/hindsight-client`)
+- Recharts and jsPDF for reporting UI
 
-## Core Capabilities
+## Project Structure
 
-- Full authentication and protected product routes
-- User-isolated data access in every API route
-- Resume PDF upload and parsing (`pdf-parse`)
-- Resume extraction with layered fallback (parser -> buffer text heuristic -> deterministic extractor)
-- Job description match scoring + top skill gaps + recommendation
-- Rejection autopsy with repeated failure pattern detection
-- Career DNA radar chart generated from persisted user data
-- Weekly hindsight report generator
-- Self-improving advice system (outcome-based priority adjustment)
+Top-level important folders:
 
-## Memory Model (Persisted in DB)
+- app: Pages and App Router API routes
+- components: Reusable UI and layout components
+- lib: Core integrations (auth, prisma, ai, hindsight, interview)
+- prisma: Schema and migrations
+- services: Domain/business logic
+- types: App-level type extensions
 
-CareerMind implements 3 memory layers using relational data and derived insights:
+## Features
 
-1. Episodic Memory
-	- `Application`, `Rejection`, `Resume`, `CareerEvent`
-2. Semantic Memory
-	- Derived profile (`Skill`, `Project`, strengths, weaknesses)
-	- Stored in `Insight` (`type=SEMANTIC`)
-3. Reflective Memory
-	- Repeated failures, strategy outcomes, advice effectiveness
-	- Stored in `Insight` (`type=REFLECTIVE`, `type=AUTOPSY`, `type=WEEKLY`)
+### 1) Authentication
 
-## Routes
+- Sign up and sign in using NextAuth credentials.
+- Protected product routes through middleware.
+- Session includes user id for scoped data access.
 
-Pages:
+### 2) Resume Intelligence
 
-- `/`
-- `/auth/signin`
-- `/auth/signup`
-- `/dashboard`
-- `/upload`
-- `/job-match`
-- `/history`
-- `/reports`
+- Upload resume PDFs.
+- Parse text with fallback paths for difficult files.
+- Extract skills/projects and persist them.
+- Update user semantic memory profile.
 
-API routes:
+### 3) Job Match
 
-- `POST /api/auth/signup`
-- `POST|GET /api/auth/[...nextauth]`
-- `POST /api/resume/upload`
-- `POST /api/job/match`
-- `POST /api/rejection/log`
-- `GET /api/dashboard`
-- `GET /api/history`
-- `GET /api/report`
+- Submit a job description.
+- Receive match score, missing skills, and recommendation.
+- Advice logs are persisted to improve future strategy.
 
-## Prisma Models
+### 4) Rejection Autopsy
 
-- `User`
-- `Resume`
-- `Skill`
-- `Project`
-- `Application`
-- `Rejection`
-- `AdviceLog`
-- `Insight`
-- `CareerEvent`
-- `Account`, `Session`, `VerificationToken` (NextAuth)
+- Log rejection details (company, role, stage, missing skills).
+- AI and rule-based fallback generate critical-gap insights.
+- Trend and outcome signals are persisted.
 
-All key models include relations, timestamps, and indexes.
+### 5) Weekly Hindsight Report
+
+- Aggregates user activity over the last 7 days.
+- Produces wins, risks, signals, scorecard, and next action.
+- Supports fallback behavior when external services are degraded.
+
+### 6) Target Companies + Interview Preparation
+
+- Save target companies and roles.
+- Generate structured interview question sets:
+  - Technical
+  - Behavioral
+  - Coding/SQL
+  - Focus Areas
+- Mock interview endpoint for answer feedback.
+- Generated interview prep is stored in DB.
+
+## Pages
+
+- /
+- /auth/signin
+- /auth/signup
+- /dashboard
+- /dashboard/companies
+- /upload
+- /job-match
+- /history
+- /reports
+
+## API Endpoints
+
+Auth:
+
+- POST /api/auth/signup
+- GET|POST /api/auth/[...nextauth]
+
+Core product:
+
+- POST /api/resume/upload
+- POST /api/job/match
+- POST /api/rejection/log
+- GET /api/dashboard
+- GET /api/history
+- GET /api/report
+
+Target company + interview prep:
+
+- POST /api/target-company
+- GET /api/target-company
+- POST /api/interview/generate
+- POST /api/interview/mock
+
+## Database Models
+
+Core:
+
+- User
+- Resume
+- Skill
+- Project
+- Application
+- Rejection
+- AdviceLog
+- Insight
+- CareerEvent
+
+Auth:
+
+- Account
+- Session
+- VerificationToken
+
+Interview prep:
+
+- TargetCompany
+- InterviewPrep
 
 ## Environment Variables
 
-Create `.env` from `.env.example`.
+Create .env from .env.example and set real credentials.
 
 Required:
 
-- `DATABASE_URL`
-- `DIRECT_URL`
-- `NEXTAUTH_URL`
-- `NEXTAUTH_SECRET`
-- `GROQ_API_KEY`
-- `HINDSIGHT_API_KEY`
+- DATABASE_URL
+- DIRECT_URL
+- NEXTAUTH_URL
+- NEXTAUTH_SECRET
+- GROQ_API_KEY
+- HINDSIGHT_API_KEY
 
 Example:
 
 ```bash
-DATABASE_URL="postgresql://postgres.<project-ref>:<password>@aws-1-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require"
+DATABASE_URL="postgresql://postgres:<password>@aws-1-<region>.pooler.supabase.com:6543/postgres?pgbouncer=true&connection_limit=1&sslmode=require"
 DIRECT_URL="postgresql://postgres:<password>@db.<project-ref>.supabase.co:5432/postgres?sslmode=require"
 NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="replace-with-a-long-random-secret"
+NEXTAUTH_SECRET="your-long-random-secret"
 GROQ_API_KEY="your-groq-api-key"
 HINDSIGHT_API_KEY="your-hindsight-api-key"
 ```
 
-Note: the published Hindsight npm package is `@vectorize-io/hindsight-client`.
+## Local Setup
 
-## Quick Start (Clone + Run)
-
-### 1. Clone the repository
+1. Clone and install dependencies.
 
 ```bash
-git clone <your-repo-url>
+git clone <repository-url>
 cd CareerMind
-```
-
-### 2. Install dependencies
-
-```bash
 npm install
 ```
 
-### 3. Create environment file
+2. Create environment file.
 
 Windows PowerShell:
 
@@ -140,160 +190,91 @@ macOS/Linux:
 cp .env.example .env
 ```
 
-Then edit `.env` and set real values for:
-
-- `DATABASE_URL` (runtime DB connection)
-- `DIRECT_URL` (direct DB connection for Prisma migrations)
-- `NEXTAUTH_SECRET`
-
-### 4. Generate Prisma client
+3. Generate Prisma client.
 
 ```bash
 npm run prisma:generate
 ```
 
-### 5. Run database migrations
+4. Apply migrations.
 
 ```bash
 npm run prisma:migrate
 ```
 
-### 6. Start the app
+5. Run dev server.
 
 ```bash
 npm run dev
 ```
 
-Open the app at `http://localhost:3000`.
+App runs on http://localhost:3000.
 
-### 7. First login flow
+## NPM Scripts
 
-1. Open `/auth/signup`
-2. Create an account
-3. Login and access `/dashboard`
+- npm run dev
+- npm run build
+- npm run start
+- npm run lint
+- npm run prisma:generate
+- npm run prisma:migrate
+- npm run prisma:studio
 
-## Useful Commands
+## AI Integration Details
 
-```bash
-npm run dev
-npm run lint
-npx tsc --noEmit
-npm run prisma:generate
-npm run prisma:migrate
-npm run prisma:studio
-```
+Groq model used:
 
-## AI + Memory Architecture
+- qwen/qwen3-32b
 
-CareerMind now uses real LLM reasoning + real persistent memory:
+Implemented with:
 
-- `lib/hindsight.ts`
-	- `logEvent(userId, type, data)`
-	- `getUserTimeline(userId)`
-	- `getSemanticProfile(userId)`
-	- `updateSemanticProfile(userId, profile)`
-	- `getReflectiveInsights(userId)`
-	- `storeInsight(userId, insight)`
-- `lib/ai.ts`
-	- `analyzeJobMatch(userId, jobDescription)`
-	- `analyzeRejectionAutopsy(userId, rejectionData)`
-	- `buildWeeklyReportAI(userId)`
-	- `extractResumeWithAI(userId, resumeText)`
-	- `recordAdviceOutcome(userId, payload)`
+- JSON-only response expectation
+- structured schema validation with zod
+- timeout/error handling
+- invalid JSON safeguards and fallback behavior
 
-All AI calls include memory context and enforce JSON-only output.
+## Security and Authorization
 
-## Example API Calls
+- All user data endpoints verify authenticated session.
+- All reads/writes are user-scoped with userId checks.
+- Protected routes are guarded by middleware.
 
-Run these after logging in (or from browser UI):
+## Operational Notes
 
-### Job Match
-
-```bash
-curl -X POST http://localhost:3000/api/job/match \
-	-H "Content-Type: application/json" \
-	-d '{"jdText":"Looking for a React + Node.js engineer with system design and AWS experience"}'
-```
-
-### Rejection Log + AI Autopsy
-
-```bash
-curl -X POST http://localhost:3000/api/rejection/log \
-	-H "Content-Type: application/json" \
-	-d '{
-		"company":"Acme",
-		"role":"Software Engineer",
-		"companyType":"STARTUP",
-		"stage":"TECHNICAL",
-		"reasonText":"Need stronger system design depth",
-		"missingSkills":["system design","aws"]
-	}'
-```
-
-### Weekly Report
-
-```bash
-curl http://localhost:3000/api/report
-```
+- Keep only one dev server running at a time.
+- If using Supabase pooler, prefer pgbouncer=true and connection_limit=1.
+- If stale asset issues appear, stop all node processes and clear .next.
 
 ## Troubleshooting
 
-### Slow development server / rebuilds on Windows
+### Port 3000 already in use
 
-- If your repo is inside OneDrive, file-locking can make Next.js rebuilds slower.
-- Prefer a local non-synced folder for best dev performance (for example `C:\dev\CareerMind`).
-- Keep only one `npm run dev` instance running at a time.
+- Stop old node/next process, then rerun npm run dev.
 
-### Build/dev cache issues (stale chunks or manifest errors)
+### Prisma client type mismatch after schema changes
 
-If you see chunk load errors or missing manifest errors, clear caches and restart:
+- Run npm run prisma:generate.
+- Restart TypeScript server in VS Code if diagnostics are stale.
 
-```powershell
-Get-Process node -ErrorAction SilentlyContinue | Stop-Process -Force
-if (Test-Path .next) { Remove-Item -Recurse -Force .next }
-if (Test-Path node_modules/.cache) { Remove-Item -Recurse -Force node_modules/.cache }
-npm run dev
-```
+### DB connection errors
 
-### Database connection errors
+- Recheck DATABASE_URL and DIRECT_URL.
+- Verify Supabase host, password, and sslmode.
 
-- Verify `DATABASE_URL` and `DIRECT_URL` are correct and use your real password.
-- If using Supabase pooler for runtime, include:
-	- `pgbouncer=true`
-	- `connection_limit=1`
-	- `sslmode=require`
-- Re-run:
+### Missing chunk or layout asset 404
 
-```bash
-npm run prisma:generate
-npm run prisma:migrate
-```
-
-### Resume upload fails
-
-- Use a valid, unlocked PDF file (password-protected PDFs are rejected).
-- If the PDF is image-only/scanned, extracted text may be limited and results can be sparse.
-- The API now falls back to a text-heuristic path when parser/AI are slow or unavailable.
-
-### Prisma transaction issues in dev
-
-- Resume persistence now avoids long interactive transactions for stability in local dev.
-- If you still see intermittent DB errors, verify pooler URL params in `DATABASE_URL`:
-	- `pgbouncer=true`
-	- `connection_limit=1`
-	- `sslmode=require`
+- Clear .next and restart dev server.
 
 ## Validation
 
 ```bash
 npm run lint
-npx tsc --noEmit
+npm run build
 ```
 
-## Deployment Notes
+## Deployment Checklist
 
-- Works with Supabase PostgreSQL or any hosted PostgreSQL.
-- Set env vars in deployment environment.
-- Run Prisma migrations during deploy pipeline.
-- App routes and APIs are authorization-protected and user-scoped.
-- Keep `experimental.serverComponentsExternalPackages` in `next.config.mjs` for stable server-side PDF parsing.
+- Set all required environment variables.
+- Run migrations during deploy.
+- Ensure NEXTAUTH_URL points to production domain.
+- Verify DB connectivity and pooler settings.
