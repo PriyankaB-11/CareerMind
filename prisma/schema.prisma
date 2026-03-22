@@ -72,6 +72,42 @@ model User {
   adviceLogs    AdviceLog[]
   insights      Insight[]
   events        CareerEvent[]
+  targetCompanies TargetCompany[]
+  interviewPreps InterviewPrep[]
+}
+
+model TargetCompany {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String
+  name       String
+  role       String?
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interviewPreps InterviewPrep[]
+
+  @@index([userId, createdAt])
+  @@index([userId, name])
+}
+
+model InterviewPrep {
+  id              String   @id @default(cuid())
+  userId          String
+  targetCompanyId String?  @db.Uuid
+  company         String
+  role            String?
+  userSkills      String[]
+  technical       String[]
+  behavioral      String[]
+  coding          String[]
+  focusAreas      String[]
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetCompany   TargetCompany? @relation(fields: [targetCompanyId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([targetCompanyId])
 }
 
 model Resume {

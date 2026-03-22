@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 
 const appLinks = [
   { href: "/dashboard", label: "Dashboard" },
+  { href: "/dashboard/companies", label: "Companies" },
   { href: "/upload", label: "Upload" },
   { href: "/job-match", label: "Job Match" },
   { href: "/history", label: "History" },
