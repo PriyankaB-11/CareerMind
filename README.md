@@ -4,6 +4,10 @@ CareerMind is a production-ready SaaS web application for persistent AI-powered 
 
 It tracks user activity over time, learns from outcomes, and generates personalized, evolving insights.
 
+## Quick Start
+
+For setup instructions, see [SETUP.md](./SETUP.md)
+
 ## Stack
 
 - Next.js 14 (App Router)

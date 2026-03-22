@@ -375,35 +375,86 @@ export async function uploadResumeForUser(input: {
 }
 
 export async function fetchDashboard(userId: string) {
-  const [semantic, reflective, weekly, skills, projectsCount, successfulAdvice, rejectionsCount] = await Promise.all([
+  const [semantic, reflective, weekly, skills, projects, successfulAdvice, rejectionsCount, rejections, adviceLogs] = await Promise.all([
     prisma.insight.findFirst({ where: { userId, type: InsightType.SEMANTIC }, orderBy: { updatedAt: "desc" } }),
     prisma.insight.findFirst({ where: { userId, type: InsightType.REFLECTIVE }, orderBy: { updatedAt: "desc" } }),
     prisma.insight.findFirst({ where: { userId, type: InsightType.WEEKLY }, orderBy: { updatedAt: "desc" } }),
     prisma.skill.findMany({ where: { userId } }),
-    prisma.project.count({ where: { userId } }),
+    prisma.project.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 30, select: { title: true } }),
     prisma.adviceLog.count({ where: { userId, outcome: AdviceOutcome.SUCCESS } }),
     prisma.rejection.count({ where: { userId } }),
+    prisma.rejection.findMany({ where: { userId }, select: { missingSkills: true, companyType: true } }),
+    prisma.adviceLog.findMany({ where: { userId }, select: { strategy: true, outcome: true } }),
   ]);
+
+  const fallbackWeaknesses = topK(rejections.flatMap((entry) => entry.missingSkills.map((skill) => skill.toLowerCase())), 5)
+    .map((entry) => entry.key);
+  const fallbackStrengths = skills
+    .map((entry) => entry.name.toLowerCase())
+    .filter((entry) => !fallbackWeaknesses.includes(entry))
+    .slice(0, 8);
+
+  const semanticContent = (semantic?.content as {
+    skills?: string[];
+    projects?: string[];
+    strengths?: string[];
+    weaknesses?: string[];
+  } | null) ?? null;
+
+  const reflectiveContent = (reflective?.content as {
+    repeatedSkillFailures?: Array<{ key: string; count: number }>;
+    repeatedCompanyTypeFailures?: Array<{ key: string; count: number }>;
+    successfulStrategies?: Array<{ key: string; count: number }>;
+    failedStrategies?: Array<{ key: string; count: number }>;
+  } | null) ?? null;
+
+  const reflectiveFallback = {
+    repeatedSkillFailures: topK(
+      rejections.flatMap((entry) => entry.missingSkills.map((skill) => skill.toLowerCase())),
+      6,
+    ).filter((entry) => entry.count >= 2),
+    repeatedCompanyTypeFailures: topK(rejections.map((entry) => entry.companyType), 4).filter((entry) => entry.count >= 2),
+    successfulStrategies: topK(
+      adviceLogs.filter((entry) => entry.outcome === AdviceOutcome.SUCCESS).map((entry) => entry.strategy),
+      6,
+    ),
+    failedStrategies: topK(
+      adviceLogs.filter((entry) => entry.outcome === AdviceOutcome.FAILURE).map((entry) => entry.strategy),
+      6,
+    ),
+  };
 
   const radar = computeRadarFromData({
     skills: skills.map((s) => s.name),
-    projectsCount,
+    projectsCount: projects.length,
     successfulAdvice,
     rejectionsCount,
   });
 
   return {
-    semantic: (semantic?.content as Record<string, unknown>) ?? {
-      skills: [],
-      projects: [],
-      strengths: [],
-      weaknesses: [],
+    semantic: {
+      skills: semanticContent?.skills?.length ? semanticContent.skills : skills.map((entry) => entry.name),
+      projects: semanticContent?.projects?.length ? semanticContent.projects : projects.map((entry) => entry.title),
+      strengths: semanticContent?.strengths?.length ? semanticContent.strengths : fallbackStrengths,
+      weaknesses: semanticContent?.weaknesses?.length ? semanticContent.weaknesses : fallbackWeaknesses,
     },
-    reflective: (reflective?.content as Record<string, unknown>) ?? {
-      repeatedSkillFailures: [],
-      repeatedCompanyTypeFailures: [],
-      successfulStrategies: [],
-      failedStrategies: [],
+    reflective: {
+      repeatedSkillFailures:
+        reflectiveContent?.repeatedSkillFailures?.length
+          ? reflectiveContent.repeatedSkillFailures
+          : reflectiveFallback.repeatedSkillFailures,
+      repeatedCompanyTypeFailures:
+        reflectiveContent?.repeatedCompanyTypeFailures?.length
+          ? reflectiveContent.repeatedCompanyTypeFailures
+          : reflectiveFallback.repeatedCompanyTypeFailures,
+      successfulStrategies:
+        reflectiveContent?.successfulStrategies?.length
+          ? reflectiveContent.successfulStrategies
+          : reflectiveFallback.successfulStrategies,
+      failedStrategies:
+        reflectiveContent?.failedStrategies?.length
+          ? reflectiveContent.failedStrategies
+          : reflectiveFallback.failedStrategies,
     },
     weekly: (weekly?.content as Record<string, unknown>) ?? null,
     radar,
@@ -411,13 +462,27 @@ export async function fetchDashboard(userId: string) {
 }
 
 export async function fetchHistory(userId: string) {
-  const [applications, rejections, events] = await Promise.all([
+  const [applicationsResult, rejectionsResult, eventsResult] = await Promise.allSettled([
     prisma.application.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 50 }),
     prisma.rejection.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 50 }),
     prisma.careerEvent.findMany({ where: { userId }, orderBy: { createdAt: "desc" }, take: 100 }),
   ]);
 
-  return { applications, rejections, events };
+  const applications = applicationsResult.status === "fulfilled" ? applicationsResult.value : [];
+  const rejections = rejectionsResult.status === "fulfilled" ? rejectionsResult.value : [];
+  const events = eventsResult.status === "fulfilled" ? eventsResult.value : [];
+
+  const warning =
+    applicationsResult.status === "rejected" || rejectionsResult.status === "rejected" || eventsResult.status === "rejected"
+      ? "Some timeline sources were unavailable, so a partial history is shown."
+      : undefined;
+
+  return {
+    applications,
+    rejections,
+    events,
+    ...(warning ? { warning } : {}),
+  };
 }
 
 async function upsertInsight(userId: string, type: InsightType, title: string, content: unknown) {

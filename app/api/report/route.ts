@@ -42,17 +42,27 @@ export async function GET() {
       aiNarrative = await buildWeeklyReportAI(session.user.id);
     } catch (aiError) {
       console.error("weekly ai failed, falling back", aiError);
-      const fallback = await buildWeeklyReport(session.user.id);
-      aiNarrative = {
-        summary: `Weekly summary for ${fallback.period}`,
-        improvements: fallback.improved,
-        insights: fallback.detectedPatterns,
-        nextBestAction: fallback.bestNextAction,
-      };
+      try {
+        const fallback = await buildWeeklyReport(session.user.id);
+        aiNarrative = {
+          summary: `Weekly summary for ${fallback.period}`,
+          improvements: fallback.improved,
+          insights: fallback.detectedPatterns,
+          nextBestAction: fallback.bestNextAction,
+        };
+      } catch (fallbackError) {
+        console.error("weekly fallback build failed", fallbackError);
+        aiNarrative = {
+          summary: "Weekly summary is based on available activity signals.",
+          improvements: [],
+          insights: [],
+          nextBestAction: "Keep logging activity this week to improve report fidelity.",
+        };
+      }
     }
 
     const since = subDays(new Date(), 7);
-    const [user, resumes, applications, rejections, adviceLogs, recentAdvice, recentRejections] = await Promise.all([
+    const [userResult, resumesResult, applicationsResult, rejectionsResult, adviceLogsResult, recentAdviceResult, recentRejectionsResult] = await Promise.allSettled([
       prisma.user.findUnique({ where: { id: session.user.id }, select: { name: true, email: true } }),
       prisma.resume.findMany({ where: { userId: session.user.id, createdAt: { gte: since } }, orderBy: { createdAt: "desc" } }),
       prisma.application.findMany({ where: { userId: session.user.id, createdAt: { gte: since } }, orderBy: { createdAt: "desc" } }),
@@ -61,6 +71,23 @@ export async function GET() {
       prisma.adviceLog.findMany({ where: { userId: session.user.id }, orderBy: { createdAt: "desc" }, take: 30 }),
       prisma.rejection.findMany({ where: { userId: session.user.id }, orderBy: { createdAt: "desc" }, take: 30 }),
     ]);
+
+    const user = userResult.status === "fulfilled" ? userResult.value : null;
+    const resumes = resumesResult.status === "fulfilled" ? resumesResult.value : [];
+    const applications = applicationsResult.status === "fulfilled" ? applicationsResult.value : [];
+    const rejections = rejectionsResult.status === "fulfilled" ? rejectionsResult.value : [];
+    const adviceLogs = adviceLogsResult.status === "fulfilled" ? adviceLogsResult.value : [];
+    const recentAdvice = recentAdviceResult.status === "fulfilled" ? recentAdviceResult.value : [];
+    const recentRejections = recentRejectionsResult.status === "fulfilled" ? recentRejectionsResult.value : [];
+
+    const degradedData =
+      userResult.status === "rejected" ||
+      resumesResult.status === "rejected" ||
+      applicationsResult.status === "rejected" ||
+      rejectionsResult.status === "rejected" ||
+      adviceLogsResult.status === "rejected" ||
+      recentAdviceResult.status === "rejected" ||
+      recentRejectionsResult.status === "rejected";
 
     const successCount = adviceLogs.filter((item) => item.outcome === AdviceOutcome.SUCCESS).length;
     const failedCount = adviceLogs.filter((item) => item.outcome === AdviceOutcome.FAILURE).length;
@@ -179,6 +206,11 @@ export async function GET() {
       insights: signals,
       nextBestAction,
       actionPlan,
+      ...(degradedData
+        ? {
+          warning: "Some data sources were temporarily unavailable. Report is based on partial activity data.",
+        }
+        : {}),
     };
 
     void Promise.allSettled([

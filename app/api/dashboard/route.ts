@@ -36,8 +36,25 @@ export async function GET() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await Promise.all([rebuildSemanticMemory(session.user.id), rebuildReflectiveMemory(session.user.id)]);
+    const refreshResults = await Promise.allSettled([
+      rebuildSemanticMemory(session.user.id),
+      rebuildReflectiveMemory(session.user.id),
+    ]);
+
     const dashboard = await fetchDashboard(session.user.id);
+
+    const refreshWarning =
+      refreshResults.some((result) => result.status === "rejected")
+        ? "Live memory refresh partially failed. Showing the latest available analysis."
+        : undefined;
+
+    if (refreshWarning) {
+      return NextResponse.json({
+        ...dashboard,
+        warning: refreshWarning,
+      });
+    }
+
     return NextResponse.json(dashboard);
   } catch (error) {
     console.error("dashboard fetch failed", error);
